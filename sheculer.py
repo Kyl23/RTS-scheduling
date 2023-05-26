@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 # %% read configuration
-config_file = "./config.json"
+config_file = "./config1.json"
 config = None
 with open(config_file, "rb") as f:
     config = json.load(f)
@@ -58,43 +58,67 @@ def print_complete(task_name, id, start, end):
     print(f'{task_name} {id} {start} {end} Complete')
 
 def parse_periodic(obj):
+    origin_obj = obj.copy()
+    tmp_obj = []
+
     for i in range(len(obj)):
         task = obj[i]
-        
+
         if check_cost_large_than_period(task, "P"):
             print_reject("P", i)
             reject_rate_store["P"] += 1
-
             continue
-
+        
         period = task['P']
         cost = task['C']
-        for start in range(0, until_time, period):
-            end = start + period
+        for start in range(0, until_time + 1, period):
+            tmp_obj.append({
+                'A' : start,
+                'C' : cost,
+                'id': i
+            })
 
-            if start <= until_time and check_available_time(start, end, cost):
-                [start, end] = insert_job2store(start, cost)
-                print_complete("P", i, start, end)
-            else:
-                print_reject("P", i)
-                reject_rate_store["P"] += 1
+    obj = tmp_obj
+    obj = sorted(obj, key=lambda x: x['A'] + x['C'])
 
-    reject_rate_store["P"] /= len(obj)
-    return
+    rejected_id = set()
 
-
-def parse_aperiodic(obj):
     for i in range(len(obj)):
         task = obj[i]
         start = task['A']
         cost = task['C']
+        end = start + cost
 
-        end = until_time
+        id = task['id'] if 'id' in task else i
         if start <= until_time and check_available_time(start, end, cost):
             [start, end] = insert_job2store(start, cost)
-            print_complete("A", i, start, end)
+            print_complete("P", id, start, end)
         else:
-            print_reject("A", i)
+            print_reject("P", id)
+            reject_rate_store["P"] += 1
+            rejected_id.add(id)
+
+    reject_rate_store["P"] /= len(origin_obj)
+    return
+
+def parse_aperiodic(obj):
+    for i in range(len(obj)):
+        obj[i]['id'] = i
+
+    obj = sorted(obj, key=lambda x: x['A'] + x['C'])
+
+    for i in range(len(obj)):
+        task = obj[i]
+        start = task['A']
+        cost = task['C']
+        end = until_time
+
+        id = task['id'] if 'id' in task else i
+        if start <= until_time and check_available_time(start, end, cost):
+            [start, end] = insert_job2store(start, cost)
+            print_complete("A", id, start, end)
+        else:
+            print_reject("A", id)
             reject_rate_store["A"] += 1
 
     reject_rate_store["A"] /= len(obj)
@@ -103,16 +127,22 @@ def parse_aperiodic(obj):
 
 def parse_sporadic(obj):
     for i in range(len(obj)):
+        obj[i]['id'] = i
+        
+    obj = sorted(obj, key=lambda x: x['A'] + x['C'])
+
+    for i in range(len(obj)):
         task = obj[i]
         start = task['A']
         cost = task['C']
-
         end = start + cost
+
+        id = task['id'] if 'id' in task else i
         if start <= until_time and check_available_time(start, end, cost):
             [start, end] = insert_job2store(start, cost)
-            print_complete("S", i, start, end)
+            print_complete("S", id, start, end)
         else:
-            print_reject("S", i)
+            print_reject("S", id)
             reject_rate_store["S"] += 1
 
     reject_rate_store["S"] /= len(obj)
@@ -124,7 +154,6 @@ config_parsing = {
     "Aperiodic": parse_aperiodic,
     "Sporadic": parse_sporadic
 }
-
 
 def shedule(schedule_order, json):
     for key in schedule_order:
