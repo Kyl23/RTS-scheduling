@@ -3,7 +3,7 @@ import json
 import numpy as np
 
 # %% read configuration
-config_file = "./config.json"
+config_file = "./config1.json"
 config = None
 with open(config_file, "rb") as f:
     config = json.load(f)
@@ -172,15 +172,19 @@ def shedule(schedule_order, json, global_job):
 
 # %%
 scheduling_order = ["Periodic", "Sporadic", "Aperiodic"]
-shedule(scheduling_order, config[0], global_job)
+for i in range(len(config)):
+    print(i)
+    shedule(scheduling_order, config[i], global_job)
 
-global_job = sorted(global_job, key=lambda x: x['A'])
-for i in global_job:
-    print(i['msg'])
-# %% drop data & ending alpha
-for value in reject_rate_store.values():
-    print(value, end=" ")
-print("")
-print(-1)
+    global_job = sorted(global_job, key=lambda x: x['A'])
+    for job in global_job:
+        print(job['msg'])
+    
+    # drop data & ending alpha
+    for index, value in enumerate(reject_rate_store.values()):
+        print(value, end=" " if index != 2 else "\n")
+
+    
 
 # %%
+print(-1)
