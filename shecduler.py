@@ -96,6 +96,9 @@ def parse_periodic(obj, global_job):
         end = start + cost
 
         id = task['id'] if 'id' in task else i
+        if end > until_time:
+            continue
+
         if start <= until_time and check_available_time(start, end, cost):
             [start, end] = insert_job2store(start, cost)
             task['msg'] = make_complete_msg("P", id, start, end)
@@ -173,18 +176,24 @@ def shedule(schedule_order, json, global_job):
 # %%
 scheduling_order = ["Periodic", "Sporadic", "Aperiodic"]
 for i in range(len(config)):
+    time_store = np.zeros((until_time + 1), 'int64')
+    reject_rate_store = {
+        "P" : 0,
+        "A" : 0,
+        "S" : 0
+    }
+    global_job = []
     print(i)
     shedule(scheduling_order, config[i], global_job)
 
     global_job = sorted(global_job, key=lambda x: x['A'])
     for job in global_job:
-        print(job['msg'])
+        if 'msg' in job:
+            print(job['msg'])
     
     # drop data & ending alpha
     for index, value in enumerate(reject_rate_store.values()):
         print(value, end=" " if index != 2 else "\n")
-
-    
 
 # %%
 print(-1)
