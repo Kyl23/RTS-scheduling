@@ -69,6 +69,8 @@ class Scheduler:
         tmp_obj = []
         id_mask = {}
 
+        obj = sorted(obj, key=lambda x: x['P'])
+
         for i in range(len(obj)):
             task = obj[i]
 
@@ -94,7 +96,6 @@ class Scheduler:
                 })
 
         obj = tmp_obj
-        obj = sorted(obj, key=lambda x: x['A'] + x['P'])
 
         rejected_id = set()
 
